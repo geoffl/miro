@@ -3306,7 +3306,7 @@ def upgrade160(cursor):
     cursor.execute("ALTER TABLE global_state ADD COLUMN tabs_width integer")
     cursor.execute("UPDATE global_state SET tabs_width=200")
 
-def update161(cursor):
+def upgrade161(cursor):
     """Add eMusic as a store."""
         # if the user is using a theme, we don't do anything
     if not app.config.get(prefs.THEME_NAME) == prefs.THEME_NAME.default:
