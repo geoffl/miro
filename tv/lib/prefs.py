@@ -62,6 +62,9 @@ class Pref:
         return self.key != other.key
 
 # These are normal user preferences.
+DONATE_NOTHANKS             = Pref(key='donateNoThanks',       default=0,     platformSpecific=False)
+LAST_DONATE_TIME            = Pref(key='lastDonateTime',       default=0,     platformSpecific=False)
+DONATE_COUNTER              = Pref(key='donateCounter',         default=10,    platformSpecific=False)
 MAIN_WINDOW_FRAME           = Pref(key='mainWindowFrame',       default=None,  platformSpecific=False)
 LEFT_VIEW_SIZE              = Pref(key='leftViewSize',          default=None,  platformSpecific=False)
 RIGHT_VIEW_SIZE             = Pref(key='rightViewSize',         default=None,  platformSpecific=False)

@@ -42,6 +42,7 @@ from miro import conversions
 from miro.frontends.widgets.keyboard import (Shortcut, CTRL, ALT, SHIFT, CMD,
      MOD, RIGHT_ARROW, LEFT_ARROW, UP_ARROW, DOWN_ARROW, SPACE, ENTER, DELETE,
      BKSPACE, ESCAPE, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12)
+from miro.frontends.widgets import dialogs
 from miro.frontends.widgets.widgetconst import COLUMN_LABELS
 from miro.frontends.widgets.widgetstatestore import WidgetStateStore
 from miro.plat.frontends.widgets import widgetset
@@ -278,7 +279,8 @@ def get_app_menu():
                     "ForceFeedparserProcessing"),
                 MenuItem(_("Clog Backend"), "ClogBackend"),
                 MenuItem(_("Run Echoprint"), "RunEchoprint"),
-                MenuItem(_("Run Donate Popup"), "RunDonatePopup")
+                MenuItem(_("Run Donate Manager PowerToys"),
+                         "RunDonateManagerPowerToys")
                 ])
         )
     return all_menus
@@ -593,9 +595,9 @@ def on_run_echoprint():
     subprocess.call([utils.get_echoprint_executable_path()])
     print '-' * 50
 
-@action_handler("RunDonatePopup")
-def on_run_donate_poupup():
-    app.widgetapp.show_donate_popup()
+@action_handler("RunDonateManagerPowerToys")
+def on_run_donate_manager_powertoys():
+    app.donate_manager.run_powertoys()
 
 class LegacyMenuUpdater(object):
     """This class contains the logic to update the menus based on enabled
