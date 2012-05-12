@@ -66,11 +66,13 @@ class DonateManager(object):
     DONATE_COUNTER - count down timer.  When zero, the dialog will be shown.
                      When re-armed, it should be populated with values
                      from DONATE_ASK{1,2,3}
-    LAST_DONATE_TIME - the last the user donated.  Starts off as 0.  If 0 on
-                       shutdown it is reset to the current time.  Used to keep
-                       track whether user has accepted as request for donation,
-                       at which point we don't bother them again.  This is
-                       reset every 0 months
+    LAST_DONATE_TIME - the last the donate request was accepted.  Starts off
+                       as 0 (the epoch), which will make it fail the 6 month
+                       nag test.  Used to keep track whether user has accepted
+                       as request for donation or after we cannot retrieve
+                       a rearm count from donate_ask_thresholds , at which
+                       point we don't bother them again.  This is reset
+                       every 6 months.
     """
     def __init__(self):
         self.donate_ask_thresholds = [app.config.get(prefs.DONATE_ASK1),
@@ -98,6 +100,10 @@ class DonateManager(object):
         #
         # The other part to this is in shutdown, if the last_donate_time
         # is still zero at the point in shutdown() set the current time.
+        #
+        # At reset, if the timer is zero, it will fail the half year nag
+        # test.  So anyone who is upgrading or somehow had a screwed
+        # last donate time will get the dialog reshown.
         HALF_YEAR = 60 * 60 * 24 * 180
         if time.time() - self.last_donate_time > HALF_YEAR:
             self.reset()
@@ -148,8 +154,12 @@ class DonateManager(object):
                       self.last_donate_time)
 
         # Show it if the donate counter has reached zero and we have asked
-        # less than 3 times
-        show_donate = self.donate_counter == 0 and self.donate_nothanks < 3
+        # less than 3 times, but not if the user's already accepted in the
+        # past 6 months
+        HALF_YEAR = 60 * 60 * 24 * 180
+        show_donate = (self.donate_counter == 0 and
+                       self.donate_nothanks < 3 and
+                       time.time() - self.last_donate_time < HALF_YEAR)
 
         if show_donate:
             # re-arm the countdown
@@ -176,11 +186,17 @@ class DonateManager(object):
         self.donate_ratelimit = True
 
     def on_window_close(self, obj):
-        if self.donate_response is None:
-            return
-        if not self.donate_response:
+        # Yes, I know they are the same.  But make it explicit:
+        # None means that the window either was never shown to begin with
+        # (but close callback get get called anyway - assume no) or
+        # the user clicked no, in which case, no really means no.
+        if self.donate_response is None or not self.donate_response:
+            # user clicked no
             self.donate_nothanks += 1
             app.config.set(prefs.DONATE_NOTHANKS, self.donate_nothanks)
+        else:
+            # user clicked yes: set the time of last acceptance
+            app.config.set(prefs.LAST_DONATE_TIME, time.time())
         # Reset flag
         self.donate_response = None
 
@@ -202,10 +218,6 @@ class DonateManager(object):
         self.reset_ratelimit()
         # Don't forget to save the donate counter on shutdown!
         app.config.set(prefs.DONATE_COUNTER, self.donate_counter)
-        # If last_donate_time is 0, reset it and pretend it to be something
-        # sane so the prefs don't get reset on next startup.
-        if self.last_donate_time == 0:
-            app.config.set(prefs.LAST_DONATE_TIME, time.time())
 
     def reset(self):
         for pref in [prefs.DONATE_NOTHANKS, prefs.LAST_DONATE_TIME,
@@ -227,7 +239,5 @@ class DonateManager(object):
             except IndexError: 
                 payment_url = self.payment_url_template % args[-1]
         if self.donate_window:
-            self.last_donate_time = time.time()
-            app.config.set(prefs.LAST_DONATE_TIME, self.last_donate_time)
             call_on_ui_thread(lambda: self.donate_window.show(url,
                                                               payment_url))
